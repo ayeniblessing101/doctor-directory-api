@@ -13,9 +13,10 @@ const createCategory = async (req, res) => {
 
 const getCategories = async (req, res) => {
   try {
-    const categories = await Category.find({});
+    const categories = await Category.find({}).select("name _id").exec();
     res.status(200).send(categories);
   } catch (error) {
+    console.log(error);
     res.status(500).send(error);
   }
 };

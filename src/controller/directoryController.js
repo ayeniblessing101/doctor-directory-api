@@ -5,38 +5,45 @@ const createDirectory = async (req, res) => {
   const directory = new Directory(req.body);
   try {
     await directory.save();
-    await directory.populate("location").execPopulate();
-    await directory.populate("speciality").execPopulate();
-
-    res.status(201).send({
-      name: directory.name,
-      email: directory.email,
-      speciality: directory.speciality.name,
-      location: directory.location.name,
-      acceptingNewPatient: directory.acceptingNewPatient,
-      yearsOfExperience: directory.yearsOfExperience,
-      practiceName: directory.practiceName,
-    });
+    res.send(directory);
   } catch (error) {
-    console.log(error);
     res.status(400).send(error);
   }
 };
-
+//localhost:3000//directories?sortBy=name:desc
 const getDirectories = async (req, res) => {
+  const sort = {};
+  const { limit = 10, skip = 0, sortBy } = req.query;
+
+  if (limit <= 0) {
+    res.status(400).send({ error: "Invalid limit value" });
+  }
+  if (skip < 0) {
+    res.status(400).send({ error: "Invalid skip value" });
+  }
+  if (sortBy) {
+    const parts = req.query.sortBy.split(":");
+    sort[parts[0]] = parts[1] === "desc" ? -1 : 1;
+  }
   try {
+    const directoriesCount = await Directory.countDocuments();
     const directories = await Directory.find({})
       .populate({
-        path: "speciality",
-        select: "name -_id",
+        path: "category",
+        select: "name",
       })
       .populate({
         path: "location",
-
-        select: "name -_id",
+        select: "name",
       })
+      .sort(sort)
+      .limit(parseInt(limit))
+      .skip(parseInt(skip))
       .exec();
-    res.status(200).send(directories);
+    res.status(200).send({
+      directories,
+      totalCount: directoriesCount,
+    });
   } catch (error) {
     console.log(error);
     res.status(500).send(error);
@@ -45,10 +52,7 @@ const getDirectories = async (req, res) => {
 
 const getDirectory = async (req, res) => {
   try {
-    const directory = await Directory.findById(req.params.id)
-      .populate("speciality")
-      .populate("location")
-      .exec();
+    const directory = await Directory.findById(req.params.id).exec();
     if (!directory) {
       res.status(404).send("Directory not found");
     }
