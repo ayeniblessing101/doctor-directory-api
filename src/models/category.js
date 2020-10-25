@@ -14,6 +14,12 @@ const categorySchema = mongoose.Schema(
   }
 );
 
+categorySchema.virtual("dir", {
+  ref: "Directory",
+  localField: "_id",
+  foreignField: "category",
+});
+
 const Category = mongoose.model("Category", categorySchema);
 
 module.exports = Category;

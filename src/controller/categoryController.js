@@ -16,7 +16,6 @@ const getCategories = async (req, res) => {
     const categories = await Category.find({}).select("name _id").exec();
     res.status(200).send(categories);
   } catch (error) {
-    console.log(error);
     res.status(500).send(error);
   }
 };

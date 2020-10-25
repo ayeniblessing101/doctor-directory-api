@@ -8,7 +8,11 @@ const directoriesRouter = new express.Router();
 directoriesRouter.post(
   "/directories",
   auth,
-  directoryController.createDirectory
+  directoryController.uploads.single("image"),
+  directoryController.createDirectory,
+  (error, req, res, next) => {
+    res.status(400).send({ error: error.message });
+  }
 );
 directoriesRouter.get("/directories", directoryController.getDirectories);
 directoriesRouter.get("/directories/:id", directoryController.getDirectory);

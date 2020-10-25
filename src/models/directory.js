@@ -33,11 +33,23 @@ const directorySchema = mongoose.Schema(
       ref: "Location",
       required: true,
     },
+    avatar: {
+      type: Buffer,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+directorySchema.methods.toJSON = function () {
+  const directory = this;
+  const directoryObject = directory.toObject();
+
+  delete directoryObject.avatar;
+
+  return directoryObject;
+};
 
 const Directory = mongoose.model("Directory", directorySchema);
 

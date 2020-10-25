@@ -1,19 +1,46 @@
 require("../db/mongoose");
 const Directory = require("../models/directory");
+const multer = require("multer");
+
+const uploads = multer({
+  limits: {
+    fileSize: 1000000,
+  },
+  fileFilter(req, file, cb) {
+    if (!file.originalname.match(/\.(jpg|png|jpeg)$/)) {
+      cb(new Error("File must be an image"));
+    }
+    cb(undefined, true);
+  },
+});
 
 const createDirectory = async (req, res) => {
-  const directory = new Directory(req.body);
+  const directory = new Directory({
+    name: req.body.name,
+    email: req.body.email,
+    category: req.body.category,
+    location: req.body.location,
+    acceptingNewPatient: req.body.acceptingNewPatient,
+    yearsOfExperience: req.body.yearsOfExperience,
+    practiceName: req.body.practiceName,
+    avatar: req.file.buffer,
+  });
   try {
     await directory.save();
-    res.send(directory);
+    res.send({ directory });
   } catch (error) {
-    res.status(400).send(error);
+    res.status(400).send({ message: error.message });
   }
 };
 //localhost:3000//directories?sortBy=name:desc
 const getDirectories = async (req, res) => {
   const sort = {};
-  const { limit = 10, skip = 0, sortBy } = req.query;
+  const match = {};
+  const { limit = 10, skip = 0, sortBy, categoryName } = req.query;
+
+  if (categoryName) {
+    match.name = categoryName;
+  }
 
   if (limit <= 0) {
     res.status(400).send({ error: "Invalid limit value" });
@@ -26,26 +53,22 @@ const getDirectories = async (req, res) => {
     sort[parts[0]] = parts[1] === "desc" ? -1 : 1;
   }
   try {
-    const directoriesCount = await Directory.countDocuments();
-    const directories = await Directory.find({})
+    await Directory.find({})
       .populate({
-        path: "category",
+        path: "category location",
         select: "name",
       })
-      .populate({
-        path: "location",
-        select: "name",
-      })
+
       .sort(sort)
       .limit(parseInt(limit))
       .skip(parseInt(skip))
-      .exec();
-    res.status(200).send({
-      directories,
-      totalCount: directoriesCount,
-    });
+      .exec((err, directories) => {
+        directories = directories.filter(
+          (directory) => directory.category != null
+        );
+        res.status(200).send(directories);
+      });
   } catch (error) {
-    console.log(error);
     res.status(500).send(error);
   }
 };
@@ -81,4 +104,5 @@ module.exports = {
   createDirectory,
   getDirectory,
   deleteDirectory,
+  uploads,
 };
