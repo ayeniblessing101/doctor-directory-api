@@ -15,7 +15,10 @@ directoriesRouter.post(
   }
 );
 directoriesRouter.get("/directories", directoryController.getDirectories);
-directoriesRouter.get("/directories/:id", directoryController.getDirectory);
+directoriesRouter.get(
+  "/directories/category/:id",
+  directoryController.getDirectoriesByCategory
+);
 directoriesRouter.delete(
   "/directories/:id",
   auth,

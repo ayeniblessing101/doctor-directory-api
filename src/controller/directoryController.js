@@ -36,10 +36,10 @@ const createDirectory = async (req, res) => {
 const getDirectories = async (req, res) => {
   const sort = {};
   const match = {};
-  const { limit = 10, skip = 0, sortBy, categoryName } = req.query;
+  const { limit = 10, skip = 0, sortBy, location } = req.query;
 
-  if (categoryName) {
-    match.name = categoryName;
+  if (location) {
+    match.name = location;
   }
 
   if (limit <= 0) {
@@ -54,17 +54,15 @@ const getDirectories = async (req, res) => {
   }
   try {
     await Directory.find({})
-      .populate({
-        path: "category location",
-        select: "name",
-      })
+      .populate({ path: "category", select: "name" })
+      .populate({ path: "location", select: "name", match })
 
       .sort(sort)
       .limit(parseInt(limit))
       .skip(parseInt(skip))
       .exec((err, directories) => {
         directories = directories.filter(
-          (directory) => directory.category != null
+          (directory) => directory.location != null
         );
         res.status(200).send(directories);
       });
@@ -73,13 +71,14 @@ const getDirectories = async (req, res) => {
   }
 };
 
-const getDirectory = async (req, res) => {
+const getDirectoriesByCategory = async (req, res) => {
   try {
-    const directory = await Directory.findById(req.params.id).exec();
-    if (!directory) {
-      res.status(404).send("Directory not found");
-    }
-    res.status(200).send(directory);
+    const getDirectoriesByCategory = await Directory.find({
+      category: req.params.id,
+    })
+      .populate("category location")
+      .exec();
+    res.status(200).send(getDirectoriesByCategory);
   } catch (error) {
     res.status(500).send(error);
   }
@@ -102,7 +101,7 @@ const deleteDirectory = async (req, res) => {
 module.exports = {
   getDirectories,
   createDirectory,
-  getDirectory,
+  getDirectoriesByCategory,
   deleteDirectory,
   uploads,
 };
